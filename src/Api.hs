@@ -11,7 +11,7 @@ import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text
 import           GHC.Generics (Generic)
 import           Network.HTTP.Req
-import           Text.URI (mkURI)
+import           Text.URI (URI(..), mkURI, mkScheme)
 
 import           Types (Token(..))
 
@@ -86,8 +86,10 @@ getOpts url opts token = runReq defaultHttpConfig $
 
 getParseURL :: FromJSON a => Text -> Token -> IO a
 getParseURL url token = do
+  httpsScheme <- mkScheme "https"
   uri <- mkURI url
-  case useHttpsURI uri of
+  let uri' = uri { uriScheme = Just httpsScheme }
+  case useHttpsURI uri' of
     Just (url, opts) -> getOpts url opts token
     Nothing -> fail $ "Invalid URL: " ++ Text.unpack url
 
