@@ -27,6 +27,8 @@ executable tabbycat-feedback
                      , file-embed
                      , modern-uri
                      , optparse-applicative
+                     , random
+                     , random-shuffle
                      , req
                      , text
   other-modules:       Api

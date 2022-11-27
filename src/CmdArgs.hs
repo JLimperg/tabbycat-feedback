@@ -12,6 +12,7 @@ data CmdArgs = CmdArgs
   , cmdArgsBaseUrl :: Text
   , cmdArgsBaseDir :: FilePath
   , cmdArgsHiddenQuestions :: [Text]
+  , cmdArgsRandomizeOrder :: Bool
   }
 
 cmdArgs :: Parser CmdArgs
@@ -33,6 +34,9 @@ cmdArgs = CmdArgs
         (long "omit" <>
          metavar "QUESTION_TEXT" <>
          help "Omit a question from the generated HTML. Takes the question text as an argument. Can be given multiple times."))
+  <*> flag True False
+        (long "randomize" <>
+         help "Randomize the order of feedback sheets and do not print which round a sheet is from.")
 
 cmdInfo :: ParserInfo CmdArgs
 cmdInfo = info cmdArgs mempty

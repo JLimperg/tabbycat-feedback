@@ -2,14 +2,19 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Render (render) where
+module Render (RenderOptions(..), render) where
 
 import           Prelude hiding (head, div)
 
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
+import           Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as NE
+import           Data.Text (Text)
 import qualified Data.Text as Text
 import           System.Directory (createDirectoryIfMissing)
+import           System.Random (StdGen, initStdGen)
+import           System.Random.Shuffle (shuffle')
 import           Text.Blaze.Html5 hiding (map)
 import           Text.Blaze.Html5.Attributes as Html
 import           Text.Blaze.Html.Renderer.Utf8 (renderHtml)
@@ -17,28 +22,51 @@ import           Text.Blaze.Html.Renderer.Utf8 (renderHtml)
 import           Types
 import           Static (stylesheet)
 
-render :: FilePath -> [AdjudicatorFeedbacks] -> IO ()
-render baseDir feedbacks = do
+data RenderOptions = RenderOptions
+  { baseDir :: FilePath
+  , randomizeOrder :: Bool
+  }
+
+render :: RenderOptions -> [AdjudicatorFeedbacks] -> IO ()
+render opts@RenderOptions { baseDir } feedbacks = do
   createDirectoryIfMissing True baseDir
-  mapM_ (writeFeedbacks baseDir) feedbacks
-  writeStylesheet baseDir
+  mapM_ (writeFeedbacks opts) feedbacks
+  writeStylesheet opts
 
-writeStylesheet :: FilePath -> IO ()
-writeStylesheet baseDir = BS.writeFile (baseDir ++ "/style.css") stylesheet
+writeStylesheet :: RenderOptions -> IO ()
+writeStylesheet RenderOptions { baseDir } =
+  BS.writeFile (baseDir ++ "/style.css") stylesheet
 
-writeFeedbacks :: FilePath -> AdjudicatorFeedbacks -> IO ()
-writeFeedbacks baseDir fb@AdjudicatorFeedbacks { urlKey }
-  = let filename = baseDir ++ "/" ++ Text.unpack urlKey ++ ".html" in
-    BSL.writeFile filename $ renderHtml $ renderFeedbacks fb
+writeFeedbacks :: RenderOptions -> AdjudicatorFeedbacks -> IO ()
+writeFeedbacks opts@RenderOptions { baseDir } fb@AdjudicatorFeedbacks { urlKey }
+  = do
+    let filename = baseDir ++ "/" ++ Text.unpack urlKey ++ ".html"
+    gen <- initStdGen
+    BSL.writeFile filename $ renderHtml $ renderFeedbacks gen opts fb
 
-renderFeedbacks :: AdjudicatorFeedbacks -> Html
-renderFeedbacks AdjudicatorFeedbacks { adjudicator, rounds } = docTypeHtml $ do
+renderFeedbacks :: StdGen -> RenderOptions -> AdjudicatorFeedbacks -> Html
+renderFeedbacks gen RenderOptions { randomizeOrder = True }
+  AdjudicatorFeedbacks { adjudicator, rounds }
+  = withSiteTemplate adjudicator $ do
+      p "Each box is one feedback sheet. The sheets appear in random order."
+      mapM_ renderFeedback $ randomizeFeedbacks gen rounds
+renderFeedbacks _ RenderOptions { randomizeOrder = False }
+  AdjudicatorFeedbacks { adjudicator, rounds }
+  = withSiteTemplate adjudicator $ mapM_ renderRound rounds
+
+withSiteTemplate :: Text -> Html -> Html
+withSiteTemplate adjudicator rest = docTypeHtml $ do
   head $ do
     meta ! charset "UTF-8"
     link ! rel "stylesheet" ! href "style.css"
   body $ do
     h1 $ text $ "Feedback for " <> adjudicator
-    mapM_ renderRound rounds
+    rest
+
+randomizeFeedbacks :: StdGen -> NonEmpty RoundFeedbacks -> [Feedback]
+randomizeFeedbacks gen rounds =
+  let fbs = concatMap (NE.toList . feedbacks) $ NE.toList rounds in
+  shuffle' fbs (length fbs) gen
 
 renderRound :: RoundFeedbacks -> Html
 renderRound RoundFeedbacks { round, feedbacks } = do

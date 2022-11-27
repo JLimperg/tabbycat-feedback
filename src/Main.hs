@@ -19,7 +19,7 @@ import           Text.URI (mkURI)
 
 import           Api
 import           CmdArgs (CmdArgs(..), parseCmdArgs)
-import           Render (render)
+import           Render (RenderOptions (..), render)
 import           Types
 
 data RawFeedback = RawFeedback
@@ -128,8 +128,12 @@ main = do
   let baseURLT = cmdArgsBaseUrl cmdArgs
   baseURI <- mkURI $ cmdArgsBaseUrl cmdArgs
   baseURL <- case useHttpsURI baseURI of
-    Just (url, opts) -> pure url
+    Just (url, _) -> pure url
     Nothing -> fail $ "Invalid URL: " ++ Text.unpack baseURLT
   feedbacks <- mungeFeedbacks . catMaybes <$>
     (traverse (mungeFeedback token hiddenQuestions) =<< getFeedback baseURL token)
-  render baseDir feedbacks
+  let renderOptions = RenderOptions
+        { baseDir = baseDir
+        , randomizeOrder = cmdArgsRandomizeOrder cmdArgs
+        }
+  render renderOptions feedbacks
