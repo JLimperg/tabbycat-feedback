@@ -1,6 +1,0 @@
-cradle:
-  stack:
-    stackYaml: "stack.yaml"
-    components:
-      - path: "src"
-        component: "tabbycat-feedback:exe:tabbycat-feedback"
