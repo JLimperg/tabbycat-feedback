@@ -12,27 +12,26 @@ anonymous.
 ## Installation
 
 I don't provide a ready-made executable version of this program, so you'll have
-to build it yourself (sorry):
+to build it yourself:
 
-- Install [the `stack` program](https://haskellstack.org).
-- In this directory, run `stack build`. This will download a Haskell compiler,
-  download and build all the dependencies and finally build `tabbycat-feedback`
-  itself, so it'll take some time.
+- Install [ghcup](https://haskell.org/ghcup).
+- Use `ghcup` to install `cabal` (any version will do) and GHC 9.4.4.
+- Run `cabal build` in this directory.
 
 ## Usage
 
 You can now run `tabbycat-feedback` with this command:
 
 ```text
-stack run -- tabbycat-feedback --token <TOKEN> --url <URL> --basedir output
+cabal run -- tabbycat-feedback --token <TOKEN> --url <URL> --basedir output
 ```
 
 where
 
 - `<TOKEN>` is your Tabbycat API token.
 - `<URL>` is the base API URL of your tournament. The URL looks like this:
-  `https://<domain>.herokuapp.com/api/v1/tournaments/<tournament>`, where
-  `<domain>` is your Heroku domain and `<tournament>` is your tournament slug.
+  `https://<host>/api/v1/tournaments/<tournament>`, where
+  `<host>` is your Tabbycat server and `<tournament>` is your tournament slug.
 
 The command will (after some time) generate some files in the `output`
 directory:
@@ -49,8 +48,8 @@ the URL where they can find their HTML file.
 
 After you're done with `tabbycat-feedback`, you can:
 
-- Remove `~/.stack`. `stack` stores all its information (especially the Haskell
-  compiler, which is quite big) there.
-- Remove the folder `.stack-work` in this directory, which was created by
-  `stack` when building `tabbycat-feedback`.
+- Remove `~/.ghcup` and `~/.cabal`. This removes Cabal, GHC and the compiled
+  dependencies `tabbycat-feedback`.
+- Remove the folder `dist-newstyle` in this directory, which was created by
+  `cabal` when building `tabbycat-feedback`.
 - Remove this directory entirely.
